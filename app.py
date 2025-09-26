@@ -37,39 +37,40 @@ st.sidebar.markdown(
 if page == "Home":
     st.title("Generate QR Code")
     with st.form(key='myqr_form'):
-        raw_text = st.text_area("Enter text or a link:")
+        raw_text = st.text_area("Enter text or a link:", value=st.session_state.get("raw_text", ""))
         submit_button = st.form_submit_button("Generate QR Code")
 
+    # Store input in session state
     if submit_button and raw_text.strip():
+        st.session_state["raw_text"] = raw_text
+        # Generate QR
+        qr.clear()
+        qr.add_data(raw_text)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='black', back_color='white')
+
+        # Save image to bytes
+        from io import BytesIO
+        img_bytes = BytesIO()
+        img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+        st.session_state["qr_img_bytes"] = img_bytes.getvalue()
+        st.session_state["img_filename"] = f'generate_img_{timestr}.png'
+
+    # Show QR code and download button if available in session state
+    if st.session_state.get("qr_img_bytes") and st.session_state.get("raw_text"):
         col1, col2 = st.columns(2)
-
         with col1:
-            # Generate QR
-            qr.add_data(raw_text)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color='black', back_color='white')
-
-            # Save & display
-            os.makedirs('image_folder', exist_ok=True)
-            img_filename = f'generate_img_{timestr}.png'
-            path_for_images = os.path.join('image_folder', img_filename)
-            img.save(path_for_images)
-
-            final_image = load_image(path_for_images)
-            st.image(final_image, caption="Your QR Code")
-
-            # Add download button
-            with open(path_for_images, "rb") as f:
-                st.download_button(
-                    label="Download QR Code",
-                    data=f,
-                    file_name=img_filename,
-                    mime="image/png"
-                )
-
+            st.image(st.session_state["qr_img_bytes"], caption="Your QR Code")
+            st.download_button(
+                label="Download QR Code",
+                data=st.session_state["qr_img_bytes"],
+                file_name=st.session_state["img_filename"],
+                mime="image/png"
+            )
         with col2:
             st.subheader("Original Text")
-            st.write(raw_text)
+            st.write(st.session_state["raw_text"])
 
 elif page == "Decode QR":
     st.title("Decode a QR Code")
