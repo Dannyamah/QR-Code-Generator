@@ -58,6 +58,15 @@ if page == "Home":
             final_image = load_image(path_for_images)
             st.image(final_image, caption="Your QR Code")
 
+            # Add download button
+            with open(path_for_images, "rb") as f:
+                st.download_button(
+                    label="Download QR Code",
+                    data=f,
+                    file_name=img_filename,
+                    mime="image/png"
+                )
+
         with col2:
             st.subheader("Original Text")
             st.write(raw_text)
